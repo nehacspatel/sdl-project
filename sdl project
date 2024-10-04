@@ -1,0 +1,89 @@
+from flask import Flask, render_template, request, jsonify
+import os
+from openpyxl import Workbook, load_workbook
+
+app = Flask(__name__)
+
+# Define the folders where Excel files will be stored
+EXCEL_DIR = "Student_Data"
+MASTER_FILE = os.path.join(EXCEL_DIR, 'MasterSheet.xlsx')  # Path for the master sheet
+MALE_FILE = os.path.join(EXCEL_DIR, 'MaleStudents.xlsx')  # Path for the male students sheet
+FEMALE_FILE = os.path.join(EXCEL_DIR, 'FemaleStudents.xlsx')  # Path for the female students sheet
+
+# Step 1: Ensure the directory exists
+if not os.path.exists(EXCEL_DIR):
+    os.makedirs(EXCEL_DIR)
+
+# Step 2: Create or load the master and gender-specific sheets
+def create_or_load_workbook(file_path, headers):
+    if os.path.exists(file_path):
+        workbook = load_workbook(file_path)
+        sheet = workbook.active
+        # Ensure "Gender" is in the headers
+        existing_headers = [cell.value for cell in sheet[1]]
+        if "Gender" not in existing_headers:
+            sheet.cell(row=1, column=len(existing_headers) + 1, value="Gender")
+    else:
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.append(headers)
+    return workbook, sheet
+
+# Define headers for all sheets
+headers = ["Name", "ID", "Branch", "Gender"]
+
+master_workbook, master_sheet = create_or_load_workbook(MASTER_FILE, headers)
+male_workbook, male_sheet = create_or_load_workbook(MALE_FILE, headers)
+female_workbook, female_sheet = create_or_load_workbook(FEMALE_FILE, headers)
+
+@app.route('/')
+def index():
+    return render_template('index1.html')  # Serve the form to enter data
+
+@app.route('/submit', methods=['POST'])
+def submit_data():
+    # Get data from the form
+    student_name = request.form['name']
+    student_id = request.form['id']
+    branch = request.form['branch']
+    gender = request.form['gender']
+
+    # Create the Excel file path based on the branch
+    file_path = os.path.join(EXCEL_DIR, f'{branch}.xlsx')
+
+    # Step 3: Check if the Excel file for the branch exists
+    if os.path.exists(file_path):
+        workbook = load_workbook(file_path)
+        sheet = workbook.active
+        
+        # Ensure "Gender" is in the headers
+        existing_headers = [cell.value for cell in sheet[1]]
+        if "Gender" not in existing_headers:
+            sheet.cell(row=1, column=len(existing_headers) + 1, value="Gender")
+    else:
+        # Create a new workbook and sheet for the branch
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.append(["Name", "ID", "Branch", "Gender"])  # Add headers
+
+    # Step 4: Append the new student data to the branch-specific sheet
+    sheet.append([student_name, student_id, branch, gender])
+    workbook.save(file_path)  # Save the branch-specific workbook
+
+    # Step 5: Append the new student data to the master sheet
+    master_sheet.append([student_name, student_id, branch, gender])
+    master_workbook.save(MASTER_FILE)  # Save the master workbook
+
+    # Step 6: Append the student data to gender-specific sheets
+    if gender == "Male":
+        male_sheet.append([student_name, student_id, branch, gender])
+        male_workbook.save(MALE_FILE)
+    elif gender == "Female":
+        female_sheet.append([student_name, student_id, branch, gender])
+        female_workbook.save(FEMALE_FILE)
+
+    return jsonify({"status": "success", "message": f"Data saved in {branch}.xlsx, MasterSheet.xlsx, and gender-specific sheets"})
+
+if __name__ == '__main__':
+    app.run(debug=True, use_reloader=False)# -*- coding: utf-8 -*-
+
