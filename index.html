@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload and Filter Student Data</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        label {
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input[type="file"], input[type="text"], select {
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #007bff;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="file"]:hover, input[type="text"]:hover, select:hover {
+            border-color: #0056b3;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        .error-message {
+            color: red;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .success-message {
+            color: green;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .download-link {
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Upload Student Data</h1>
+        <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" required />
+            <button type="submit">Upload</button>
+        </form>
+
+        <h1>Filter Students</h1>
+        <form id="filterForm" method="post">
+            <label for="branch">Branch:</label>
+            <select name="branch">
+                <option value="all">All</option>
+                <option value="CSE">CSE</option>
+                <option value="IT">IT</option>
+                <option value="EC">EC</option>
+                <option value="Civil">Civil</option>
+                <option value="EE">EE</option>
+                <option value="EI">EI</option>
+                <option value="Mech">Mechanical</option>
+            </select>
+
+            <label for="gender">Gender:</label>
+            <select name="gender">
+                <option value="all">All</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Both">Both Male and Female</option>
+            </select>
+
+            <label for="city">City:</label>
+            <input type="text" name="city" placeholder="Enter city" />
+
+            <button type="button" id="filterButton">Filter</button>
+        </form>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+        <div id="downloadLink" class="download-link">
+            <a id="fileLink" href="#" target="_blank">Download Filtered Students</a>
+        </div>
+    </div>
+
+    <script>
+        $('#filterButton').click(function() {
+            $('#errorMessage').text(''); // Clear previous error messages
+            $('#successMessage').text(''); // Clear previous success messages
+            
+            $.ajax({
+                url: '/filter',
+                type: 'POST',
+                data: $('#filterForm').serialize(),
+                success: function(data) {
+                    $('#downloadLink').show();
+                    $('#fileLink').attr('href', data.download_link); // Set the download link
+                    $('#successMessage').text('Filtered students file is ready for download!');
+                },
+                error: function(xhr) {
+                    $('#errorMessage').text(xhr.responseJSON.message || xhr.statusText);
+                    $('#downloadLink').hide(); // Hide download link on error
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
